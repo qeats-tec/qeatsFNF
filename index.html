@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>FNF Style Rhythm Game</title>
+
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #111, #000);
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(#0ff2 1px, transparent 1px),
+    linear-gradient(90deg, #0ff2 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridMove 8s linear infinite;
+  z-index: -1;
+}
+
+@keyframes gridMove {
+  to { background-position: 0 600px, 600px 0; }
+}
+
+#game {
+  width: 420px;
+  height: 600px;
+  margin: 20px auto;
+  position: relative;
+  border: 2px solid #0ff;
+  box-shadow: 0 0 25px #0ff;
+}
+
+.lane {
+  position: absolute;
+  top: 0;
+  width: 100px;
+  height: 100%;
+  border-left: 1px solid #0ff3;
+}
+
+.lane:nth-child(1) { left: 0; }
+.lane:nth-child(2) { left: 105px; }
+.lane:nth-child(3) { left: 210px; }
+.lane:nth-child(4) { left: 315px; }
+
+.note {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  left: 10px;
+  background: #0ff;
+  clip-path: polygon(50% 0, 0 50%, 50% 100%, 100% 50%);
+  box-shadow: 0 0 15px #0ff;
+}
+
+.hit-line {
+  position: absolute;
+  bottom: 90px;
+  width: 100%;
+  height: 5px;
+  background: #f0f;
+}
+
+.key {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  text-align: center;
+  font-size: 22px;
+  text-shadow: 0 0 10px #0ff;
+}
+
+#ui {
+  text-align: center;
+}
+
+#startBtn {
+  display: block;
+  margin: 10px auto;
+  padding: 10px 30px;
+  font-size: 18px;
+  background: #0ff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<button id="startBtn">▶ START</button>
+
+<div id="game">
+  <div class="lane"><div class="key">1</div></div>
+  <div class="lane"><div class="key">2</div></div>
+  <div class="lane"><div class="key">3</div></div>
+  <div class="lane"><div class="key">4</div></div>
+  <div class="hit-line"></div>
+</div>
+
+<div id="ui">
+  Score: <span id="score">0</span> |
+  Combo: <span id="combo">0</span> |
+  Miss: <span id="miss">0</span>
+</div>
+
+<audio id="music" src="R3HAB-feat-Deorro-G-zalo-(CeeNaija.com).mp3"></audio>
+
+<script>
+const lanes = document.querySelectorAll(".lane");
+const scoreEl = document.getElementById("score");
+const comboEl = document.getElementById("combo");
+const missEl  = document.getElementById("miss");
+const music   = document.getElementById("music");
+const startBtn = document.getElementById("startBtn");
+
+let notes = [];
+let score = 0, combo = 0, miss = 0;
+let running = false;
+const speed = 3;
+
+// KESİN çalışan tuş sistemi
+const keys = {
+  "Digit1": 0,
+  "Digit2": 1,
+  "Digit3": 2,
+  "Digit4": 3
+};
+
+function spawnNote() {
+  if (!running) return;
+  const lane = Math.floor(Math.random() * 4);
+  const note = document.createElement("div");
+  note.className = "note";
+  note.dataset.lane = lane;
+  note.dataset.y = -80;
+  note.style.top = "-80px";
+  lanes[lane].appendChild(note);
+  notes.push(note);
+}
+
+function update() {
+  if (!running) return;
+  for (let i = notes.length - 1; i >= 0; i--) {
+    const note = notes[i];
+    let y = Number(note.dataset.y);
+    y += speed;
+    note.dataset.y = y;
+    note.style.top = y + "px";
+
+    if (y > 520) {
+      note.remove();
+      notes.splice(i, 1);
+      combo = 0;
+      miss++;
+      missEl.textContent = miss;
+      comboEl.textContent = combo;
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+document.addEventListener("keydown", e => {
+  const lane = keys[e.code];
+  if (lane === undefined || !running) return;
+
+  for (let i = 0; i < notes.length; i++) {
+    const note = notes[i];
+    if (+note.dataset.lane === lane) {
+      const y = Number(note.dataset.y);
+      if (y > 420 && y < 560) {
+        note.remove();
+        notes.splice(i, 1);
+        score += 100;
+        combo++;
+        scoreEl.textContent = score;
+        comboEl.textContent = combo;
+        return;
+      }
+    }
+  }
+});
+
+startBtn.onclick = () => {
+  if (running) return;
+  running = true;
+  music.volume = 0.8;
+  music.play();
+  setInterval(spawnNote, 600);
+  update();
+};
+</script>
+
+</body>
+</html>
