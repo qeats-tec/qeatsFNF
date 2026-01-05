@@ -44,6 +44,11 @@ body::before {
   width: 100px;
   height: 100%;
   border-left: 1px solid #0ff3;
+  transition: box-shadow 0.1s;
+}
+
+.lane.active {
+  box-shadow: inset 0 0 25px #0ff;
 }
 
 .lane:nth-child(1) { left: 0; }
@@ -67,6 +72,7 @@ body::before {
   width: 100%;
   height: 5px;
   background: #f0f;
+  box-shadow: 0 0 15px #f0f;
 }
 
 .key {
@@ -127,12 +133,12 @@ let score = 0, combo = 0, miss = 0;
 let running = false;
 const speed = 3;
 
-// KESİN çalışan tuş sistemi
+// 1-2-3-4 kesin çalışan sistem
 const keys = {
-  "Digit1": 0,
-  "Digit2": 1,
-  "Digit3": 2,
-  "Digit4": 3
+  Digit1: 0,
+  Digit2: 1,
+  Digit3: 2,
+  Digit4: 3
 };
 
 function spawnNote() {
@@ -149,6 +155,7 @@ function spawnNote() {
 
 function update() {
   if (!running) return;
+
   for (let i = notes.length - 1; i >= 0; i--) {
     const note = notes[i];
     let y = Number(note.dataset.y);
@@ -156,7 +163,7 @@ function update() {
     note.dataset.y = y;
     note.style.top = y + "px";
 
-    if (y > 520) {
+    if (y > 560) {
       note.remove();
       notes.splice(i, 1);
       combo = 0;
@@ -172,10 +179,15 @@ document.addEventListener("keydown", e => {
   const lane = keys[e.code];
   if (lane === undefined || !running) return;
 
+  // lane parlasın
+  lanes[lane].classList.add("active");
+  setTimeout(() => lanes[lane].classList.remove("active"), 100);
+
   for (let i = 0; i < notes.length; i++) {
     const note = notes[i];
     if (+note.dataset.lane === lane) {
       const y = Number(note.dataset.y);
+      // 🔥 GENİŞ HITBOX (kolay)
       if (y > 420 && y < 560) {
         note.remove();
         notes.splice(i, 1);
@@ -192,8 +204,15 @@ document.addEventListener("keydown", e => {
 startBtn.onclick = () => {
   if (running) return;
   running = true;
+
+  music.currentTime = 0;
   music.volume = 0.8;
-  music.play();
+  music.load();
+  music.play().catch(err => {
+    alert("Ses çalmadı! Mp3 dosya adını kontrol et.");
+    console.log(err);
+  });
+
   setInterval(spawnNote, 600);
   update();
 };
