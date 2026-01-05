@@ -13,6 +13,7 @@ body {
   color: white;
 }
 
+/* Grid arka plan */
 body::before {
   content: "";
   position: fixed;
@@ -32,7 +33,7 @@ body::before {
 #game {
   width: 420px;
   height: 600px;
-  margin: 20px auto;
+  margin: 20px auto 120px;
   position: relative;
   border: 2px solid #0ff;
   box-shadow: 0 0 25px #0ff;
@@ -41,14 +42,9 @@ body::before {
 .lane {
   position: absolute;
   top: 0;
-  width: 100px;
+  width: 105px;
   height: 100%;
   border-left: 1px solid #0ff3;
-  transition: box-shadow 0.1s;
-}
-
-.lane.active {
-  box-shadow: inset 0 0 25px #0ff;
 }
 
 .lane:nth-child(1) { left: 0; }
@@ -60,7 +56,7 @@ body::before {
   position: absolute;
   width: 80px;
   height: 80px;
-  left: 10px;
+  left: 12px;
   background: #0ff;
   clip-path: polygon(50% 0, 0 50%, 50% 100%, 100% 50%);
   box-shadow: 0 0 15px #0ff;
@@ -68,16 +64,15 @@ body::before {
 
 .hit-line {
   position: absolute;
-  bottom: 90px;
+  bottom: 110px;
   width: 100%;
-  height: 5px;
+  height: 6px;
   background: #f0f;
-  box-shadow: 0 0 15px #f0f;
 }
 
 .key {
   position: absolute;
-  bottom: 20px;
+  bottom: 30px;
   width: 100%;
   text-align: center;
   font-size: 22px;
@@ -86,6 +81,7 @@ body::before {
 
 #ui {
   text-align: center;
+  margin-top: 5px;
 }
 
 #startBtn {
@@ -96,6 +92,30 @@ body::before {
   background: #0ff;
   border: none;
   cursor: pointer;
+}
+
+/* 📱 MOBİL TUŞLAR */
+#mobile-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  display: flex;
+}
+
+#mobile-controls button {
+  flex: 1;
+  font-size: 30px;
+  background: #111;
+  color: #0ff;
+  border: 1px solid #0ff;
+  box-shadow: inset 0 0 15px #0ff;
+}
+
+#mobile-controls button:active {
+  background: #0ff;
+  color: #000;
 }
 </style>
 </head>
@@ -118,7 +138,15 @@ body::before {
   Miss: <span id="miss">0</span>
 </div>
 
-<audio id="music" src="R3HAB-feat-Deorro-G-zalo-(CeeNaija.com).mp3"></audio>
+<!-- 📱 Mobil tuşlar -->
+<div id="mobile-controls">
+  <button data-lane="0">1</button>
+  <button data-lane="1">2</button>
+  <button data-lane="2">3</button>
+  <button data-lane="3">4</button>
+</div>
+
+<audio id="music" src="music.mp3"></audio>
 
 <script>
 const lanes = document.querySelectorAll(".lane");
@@ -131,14 +159,14 @@ const startBtn = document.getElementById("startBtn");
 let notes = [];
 let score = 0, combo = 0, miss = 0;
 let running = false;
-const speed = 3;
+const speed = 4;
 
-// 1-2-3-4 kesin çalışan sistem
+// Klavye tuşları
 const keys = {
-  Digit1: 0,
-  Digit2: 1,
-  Digit3: 2,
-  Digit4: 3
+  "Digit1": 0,
+  "Digit2": 1,
+  "Digit3": 2,
+  "Digit4": 3
 };
 
 function spawnNote() {
@@ -155,7 +183,6 @@ function spawnNote() {
 
 function update() {
   if (!running) return;
-
   for (let i = notes.length - 1; i >= 0; i--) {
     const note = notes[i];
     let y = Number(note.dataset.y);
@@ -175,20 +202,13 @@ function update() {
   requestAnimationFrame(update);
 }
 
-document.addEventListener("keydown", e => {
-  const lane = keys[e.code];
-  if (lane === undefined || !running) return;
-
-  // lane parlasın
-  lanes[lane].classList.add("active");
-  setTimeout(() => lanes[lane].classList.remove("active"), 100);
-
+// 🎯 VURUŞ FONKSİYONU (KLAVYE + MOBİL)
+function hitLane(lane) {
   for (let i = 0; i < notes.length; i++) {
     const note = notes[i];
     if (+note.dataset.lane === lane) {
       const y = Number(note.dataset.y);
-      // 🔥 GENİŞ HITBOX (kolay)
-      if (y > 420 && y < 560) {
+      if (y > 420 && y < 580) { // geniş hitbox
         note.remove();
         notes.splice(i, 1);
         score += 100;
@@ -199,20 +219,32 @@ document.addEventListener("keydown", e => {
       }
     }
   }
+}
+
+// Klavye
+document.addEventListener("keydown", e => {
+  if (!running) return;
+  const lane = keys[e.code];
+  if (lane !== undefined) hitLane(lane);
 });
 
+// Mobil + mouse
+document.querySelectorAll("#mobile-controls button").forEach(btn => {
+  btn.addEventListener("touchstart", e => {
+    e.preventDefault();
+    if (running) hitLane(+btn.dataset.lane);
+  });
+  btn.addEventListener("mousedown", () => {
+    if (running) hitLane(+btn.dataset.lane);
+  });
+});
+
+// Başlat
 startBtn.onclick = () => {
   if (running) return;
   running = true;
-
-  music.currentTime = 0;
   music.volume = 0.8;
-  music.load();
-  music.play().catch(err => {
-    alert("Ses çalmadı! Mp3 dosya adını kontrol et.");
-    console.log(err);
-  });
-
+  music.play();
   setInterval(spawnNote, 600);
   update();
 };
