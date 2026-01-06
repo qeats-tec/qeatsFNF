@@ -160,6 +160,7 @@ let notes = [];
 let score = 0, combo = 0, miss = 0;
 let running = false;
 const speed = 4;
+let spawnTimer = null;
 
 // Klavye tuşları
 const keys = {
@@ -190,7 +191,7 @@ function update() {
     note.dataset.y = y;
     note.style.top = y + "px";
 
-    if (y > 560) {
+    if (y > 580) {
       note.remove();
       notes.splice(i, 1);
       combo = 0;
@@ -202,13 +203,13 @@ function update() {
   requestAnimationFrame(update);
 }
 
-// 🎯 VURUŞ FONKSİYONU (KLAVYE + MOBİL)
+// 🎯 VURUŞ
 function hitLane(lane) {
   for (let i = 0; i < notes.length; i++) {
     const note = notes[i];
     if (+note.dataset.lane === lane) {
       const y = Number(note.dataset.y);
-      if (y > 420 && y < 580) { // geniş hitbox
+      if (y > 420 && y < 600) {
         note.remove();
         notes.splice(i, 1);
         score += 100;
@@ -230,22 +231,47 @@ document.addEventListener("keydown", e => {
 
 // Mobil + mouse
 document.querySelectorAll("#mobile-controls button").forEach(btn => {
+  const lane = +btn.dataset.lane;
+
   btn.addEventListener("touchstart", e => {
     e.preventDefault();
-    if (running) hitLane(+btn.dataset.lane);
+    if (running) hitLane(lane);
   });
+
   btn.addEventListener("mousedown", () => {
-    if (running) hitLane(+btn.dataset.lane);
+    if (running) hitLane(lane);
   });
 });
 
-// Başlat
-startBtn.onclick = () => {
+// 🔊 SES KİLİDİ AÇMA (mobil için kritik)
+function unlockAudio() {
+  music.play().then(() => {
+    music.pause();
+    music.currentTime = 0;
+  }).catch(() => {});
+  document.removeEventListener("touchstart", unlockAudio);
+}
+document.addEventListener("touchstart", unlockAudio, { once: true });
+
+// ▶ START
+startBtn.onclick = async () => {
   if (running) return;
+
   running = true;
+  score = combo = miss = 0;
+  scoreEl.textContent = comboEl.textContent = missEl.textContent = 0;
+
+  music.currentTime = 0;
   music.volume = 0.8;
-  music.play();
-  setInterval(spawnNote, 600);
+
+  try {
+    await music.play();
+    console.log("Müzik başladı");
+  } catch (e) {
+    alert("Ses çalmadı! Telefonda ekranın herhangi bir yerine bir kez dokun.");
+  }
+
+  spawnTimer = setInterval(spawnNote, 600);
   update();
 };
 </script>
